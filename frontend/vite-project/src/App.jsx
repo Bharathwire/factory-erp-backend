@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import "./index.css";
 
 const API_URL = "https://factory-erp-backend.onrender.com";
 
@@ -35,28 +36,20 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "30px", fontFamily: "Arial" }}>
-      <h1 style={{ color: "#2c3e50" }}>Factory ERP Orders</h1>
+    <div className="container">
+      <h1>Factory ERP Orders</h1>
 
-      <div style={{ marginBottom: "20px" }}>
+      <div className="form">
         <input name="customer" placeholder="Customer Name" onChange={handleChange} />
         <input name="product" placeholder="Product" onChange={handleChange} />
         <input name="gauge" placeholder="Gauge" onChange={handleChange} />
         <input name="size" placeholder="Size" onChange={handleChange} />
         <input name="quantity" placeholder="Quantity" onChange={handleChange} />
-        <button onClick={addOrder} style={{
-          background: "#3498db",
-          color: "white",
-          padding: "8px 15px",
-          border: "none",
-          marginLeft: "10px"
-        }}>
-          Add Order
-        </button>
+        <button onClick={addOrder}>Add Order</button>
       </div>
 
-      <table border="1" cellPadding="10" style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead style={{ background: "#3498db", color: "white" }}>
+      <table>
+        <thead>
           <tr>
             <th>Customer</th>
             <th>Product</th>
