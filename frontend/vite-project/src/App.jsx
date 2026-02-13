@@ -1,140 +1,78 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
-const API = "https://factory-erp-backend.onrender.com";
+const API_URL = "https://factory-erp-backend.onrender.com";
 
 function App() {
   const [orders, setOrders] = useState([]);
   const [form, setForm] = useState({
-    customerName: "",
+    customer: "",
     product: "",
     gauge: "",
     size: "",
     quantity: "",
-    deliveryDate: "",
-    status: "Pending",
-    priority: "Normal"
   });
 
-  // Fetch Orders
-  const fetchOrders = () => {
-    fetch(`${API}/orders`)
+  useEffect(() => {
+    fetch(`${API_URL}/orders`)
       .then(res => res.json())
       .then(data => setOrders(data))
-      .catch(err => console.error(err));
-  };
-
-  useEffect(() => {
-    fetchOrders();
+      .catch(err => console.log(err));
   }, []);
 
-  // Add Order
-  const addOrder = (e) => {
-    e.preventDefault();
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-    fetch(`${API}/orders`, {
+  const addOrder = async () => {
+    const res = await fetch(`${API_URL}/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    })
-      .then(() => {
-        fetchOrders();
-        setForm({
-          customerName: "",
-          product: "",
-          gauge: "",
-          size: "",
-          quantity: "",
-          deliveryDate: "",
-          status: "Pending",
-          priority: "Normal"
-        });
-      })
-      .catch(err => console.error(err));
-  };
+      body: JSON.stringify(form),
+    });
 
-  // Update Status
-  const updateStatus = (id) => {
-    fetch(`${API}/orders/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "Completed" })
-    }).then(() => fetchOrders());
-  };
-
-  // Delete Order
-  const deleteOrder = (id) => {
-    fetch(`${API}/orders/${id}`, {
-      method: "DELETE"
-    }).then(() => fetchOrders());
+    const data = await res.json();
+    setOrders([...orders, data]);
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Factory ERP Orders</h2>
+    <div style={{ padding: "30px", fontFamily: "Arial" }}>
+      <h1 style={{ color: "#2c3e50" }}>Factory ERP Orders</h1>
 
-      <form onSubmit={addOrder} style={{ marginBottom: "20px" }}>
-        <input
-          placeholder="Customer Name"
-          value={form.customerName}
-          onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Product"
-          value={form.product}
-          onChange={(e) => setForm({ ...form, product: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Gauge"
-          value={form.gauge}
-          onChange={(e) => setForm({ ...form, gauge: e.target.value })}
-        />
-        <input
-          placeholder="Size"
-          value={form.size}
-          onChange={(e) => setForm({ ...form, size: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={form.quantity}
-          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-          required
-        />
-        <input
-          type="date"
-          value={form.deliveryDate}
-          onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })}
-        />
-        <button type="submit">Add Order</button>
-      </form>
+      <div style={{ marginBottom: "20px" }}>
+        <input name="customer" placeholder="Customer Name" onChange={handleChange} />
+        <input name="product" placeholder="Product" onChange={handleChange} />
+        <input name="gauge" placeholder="Gauge" onChange={handleChange} />
+        <input name="size" placeholder="Size" onChange={handleChange} />
+        <input name="quantity" placeholder="Quantity" onChange={handleChange} />
+        <button onClick={addOrder} style={{
+          background: "#3498db",
+          color: "white",
+          padding: "8px 15px",
+          border: "none",
+          marginLeft: "10px"
+        }}>
+          Add Order
+        </button>
+      </div>
 
-      <table border="1" cellPadding="10">
-        <thead>
+      <table border="1" cellPadding="10" style={{ borderCollapse: "collapse", width: "100%" }}>
+        <thead style={{ background: "#3498db", color: "white" }}>
           <tr>
             <th>Customer</th>
             <th>Product</th>
+            <th>Gauge</th>
+            <th>Size</th>
             <th>Qty</th>
-            <th>Status</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {orders.map(order => (
-            <tr key={order._id}>
-              <td>{order.customerName}</td>
-              <td>{order.product}</td>
-              <td>{order.quantity}</td>
-              <td>{order.status}</td>
-              <td>
-                <button onClick={() => updateStatus(order._id)}>
-                  Complete
-                </button>
-                <button onClick={() => deleteOrder(order._id)}>
-                  Delete
-                </button>
-              </td>
+          {orders.map((o, index) => (
+            <tr key={index}>
+              <td>{o.customer}</td>
+              <td>{o.product}</td>
+              <td>{o.gauge}</td>
+              <td>{o.size}</td>
+              <td>{o.quantity}</td>
             </tr>
           ))}
         </tbody>
