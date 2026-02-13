@@ -6,6 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Factory ERP Backend is running 🚀");
+});
+
 // 🔹 Connect MongoDB
 mongoose.connect("mongodb+srv://Support_db_user:KXxY6KDbWqCEOY7O@bharathwire.edatxd1.mongodb.net/?appName=BharathWire")
   .then(() => console.log("MongoDB Connected"))
@@ -84,5 +88,6 @@ app.get("/orders/:id", async (req, res) => {
   const order = await Order.findById(req.params.id);
   res.json(order);
 });
+
 
 
