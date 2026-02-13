@@ -6,9 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Factory ERP Backend is running 🚀");
-});
 
 // 🔹 Connect MongoDB
 mongoose.connect("mongodb+srv://Support_db_user:KXxY6KDbWqCEOY7O@bharathwire.edatxd1.mongodb.net/?appName=BharathWire")
@@ -80,13 +77,26 @@ app.delete("/orders/:id", async (req, res) => {
   res.send("Order deleted");
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+// Root route
+app.get("/", (req, res) => {
+  res.send("Factory ERP Backend is running 🚀");
 });
 
+// Get single order
 app.get("/orders/:id", async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  res.json(order);
+  try {
+    const order = await Order.findById(req.params.id);
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: "Order not found" });
+  }
+});
+
+// START SERVER (ALWAYS LAST)
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 
