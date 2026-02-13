@@ -3,28 +3,16 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const app = express();
-app.use(cors({
-  origin: "*"
-}));
 
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-
-// 🔹 Connect MongoDB
-mongoose.connect("mongodb+srv://Support_db_user:KXxY6KDbWqCEOY7O@bharathwire.edatxd1.mongodb.net/?appName=BharathWire")
+// MongoDB Connection
+mongoose.connect("mongodb+srv://Support_db_user:KXxY6KDbWqCEOY7O@bharathwire.edatxd1.mongodb.net/factoryERP")
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log(err));
 
-// 🔹 Customer Schema
-const customerSchema = new mongoose.Schema({
-  name: String,
-  place: String,
-  mobile: String
-});
-
-const Customer = mongoose.model("Customer", customerSchema);
-
-// 🔹 Order Schema
+// Schemas
 const orderSchema = new mongoose.Schema({
   customerName: String,
   product: String,
@@ -38,29 +26,16 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model("Order", orderSchema);
 
-// -------------------
-// CUSTOMER ROUTES
-// -------------------
+// Routes
 
-app.post("/customers", async (req, res) => {
-  const newCustomer = new Customer(req.body);
-  await newCustomer.save();
-  res.send("Customer added");
+app.get("/", (req, res) => {
+  res.send("Factory ERP Backend is running 🚀");
 });
-
-app.get("/customers", async (req, res) => {
-  const customers = await Customer.find();
-  res.json(customers);
-});
-
-// -------------------
-// ORDER ROUTES
-// -------------------
 
 app.post("/orders", async (req, res) => {
   const newOrder = new Order(req.body);
   await newOrder.save();
-  res.send("Order added");
+  res.json(newOrder);
 });
 
 app.get("/orders", async (req, res) => {
@@ -68,39 +43,18 @@ app.get("/orders", async (req, res) => {
   res.json(orders);
 });
 
-// 🔹 Update Order Status
 app.put("/orders/:id", async (req, res) => {
   await Order.findByIdAndUpdate(req.params.id, req.body);
   res.send("Order updated");
 });
 
-// 🔹 Delete Order
 app.delete("/orders/:id", async (req, res) => {
   await Order.findByIdAndDelete(req.params.id);
   res.send("Order deleted");
 });
 
-// Root route
-app.get("/", (req, res) => {
-  res.send("Factory ERP Backend is running 🚀");
-});
-
-// Get single order
-app.get("/orders/:id", async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: "Order not found" });
-  }
-});
-
-// START SERVER (ALWAYS LAST)
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
-
