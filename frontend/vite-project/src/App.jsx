@@ -18,7 +18,7 @@ function App() {
   const [priorityFilter, setPriorityFilter] = useState("All");
 
   const fetchOrders = () => {
-    fetch("http://localhost:5000/orders")
+    fetch("https://factory-erp-backend.onrender.com")
       .then(res => res.json())
       .then(data => setOrders(data));
   };
@@ -33,7 +33,8 @@ function App() {
 
   const addOrder = (e) => {
     e.preventDefault();
-    fetch("http://localhost:5000/orders", {
+    fetch("https://factory-erp-backend.onrender.com",
+       {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)
@@ -53,7 +54,7 @@ function App() {
   };
 
   const updateStatus = (id) => {
-    fetch(`http://localhost:5000/orders/${id}`, {
+    fetch(`http://https://factory-erp-backend.onrender.com/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "Completed" })
@@ -61,7 +62,7 @@ function App() {
   };
 
   const deleteOrder = (id) => {
-    fetch(`http://localhost:5000/orders/${id}`, {
+    fetch(`https://factory-erp-backend.onrender.com/${id}`, {
       method: "DELETE"
     }).then(() => fetchOrders());
   };
