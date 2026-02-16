@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./index.css";
 
 const API_URL = "https://factory-erp-backend.onrender.com";
@@ -11,11 +11,10 @@ function App() {
     gauge: "",
     size: "",
     quantity: "",
-    status: "Pending"
+    status: "Pending",
   });
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
 
   // 🔹 Fetch Orders
   const fetchOrders = async () => {
@@ -44,7 +43,7 @@ function App() {
     await fetch(`${API_URL}/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
+      body: JSON.stringify(form),
     });
 
     fetchOrders();
@@ -55,16 +54,16 @@ function App() {
       gauge: "",
       size: "",
       quantity: "",
-      status: "Pending"
+      status: "Pending",
     });
   };
 
-  // 🔹 Mark Complete
-  const markComplete = async (id) => {
+  // 🔹 Mark Completed
+  const markCompleted = async (id) => {
     await fetch(`${API_URL}/orders/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "Completed" })
+      body: JSON.stringify({ status: "Completed" }),
     });
 
     fetchOrders();
@@ -73,16 +72,16 @@ function App() {
   // 🔹 Delete Order
   const deleteOrder = async (id) => {
     await fetch(`${API_URL}/orders/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
     });
 
-    fetchOrders();
+    // Instant UI update
+    setOrders(orders.filter(order => order._id !== id));
   };
 
   // 🔹 Filters
   const filteredOrders = orders.filter(order =>
-    order.customerName?.toLowerCase().includes(search.toLowerCase()) &&
-    (statusFilter === "All" || order.status === statusFilter)
+    order.customerName?.toLowerCase().includes(search.toLowerCase())
   );
 
   // 🔹 Summary
@@ -93,32 +92,32 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
 
-      <h1 className="text-4xl font-bold text-center text-blue-600 mb-6">
+      <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
         Factory ERP Dashboard
       </h1>
 
-      {/* SUMMARY CARDS */}
+      {/* 🔹 Summary Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white shadow rounded p-4 text-center">
+        <div className="bg-white p-4 rounded-xl shadow text-center">
           <h2 className="font-semibold">Total Orders</h2>
-          <p className="text-2xl font-bold text-blue-600">{total}</p>
+          <p className="text-2xl text-blue-600 font-bold">{total}</p>
         </div>
 
-        <div className="bg-white shadow rounded p-4 text-center">
+        <div className="bg-white p-4 rounded-xl shadow text-center">
           <h2 className="font-semibold">Completed</h2>
-          <p className="text-2xl font-bold text-green-600">{completed}</p>
+          <p className="text-2xl text-green-600 font-bold">{completed}</p>
         </div>
 
-        <div className="bg-white shadow rounded p-4 text-center">
+        <div className="bg-white p-4 rounded-xl shadow text-center">
           <h2 className="font-semibold">Pending</h2>
-          <p className="text-2xl font-bold text-orange-500">{pending}</p>
+          <p className="text-2xl text-orange-500 font-bold">{pending}</p>
         </div>
       </div>
 
-      {/* ADD ORDER FORM */}
+      {/* 🔹 Add Order Form */}
       <form
         onSubmit={addOrder}
-        className="bg-white p-4 rounded shadow grid grid-cols-6 gap-3 mb-6"
+        className="bg-white p-4 rounded-xl shadow grid grid-cols-5 gap-3 mb-6"
       >
         <input
           name="customerName"
@@ -168,34 +167,24 @@ function App() {
 
         <button
           type="submit"
-          className="bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="col-span-5 bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
         >
           Add Order
         </button>
       </form>
 
-      {/* SEARCH + FILTER */}
-      <div className="flex gap-4 mb-4">
+      {/* 🔹 Search */}
+      <div className="mb-4">
         <input
           placeholder="Search Customer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border p-2 rounded w-1/3"
         />
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border p-2 rounded"
-        >
-          <option>All</option>
-          <option>Pending</option>
-          <option>Completed</option>
-        </select>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded shadow overflow-hidden">
+      {/* 🔹 Table */}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full text-center">
           <thead className="bg-blue-600 text-white">
             <tr>
@@ -230,7 +219,7 @@ function App() {
 
                 <td>
                   <button
-                    onClick={() => markComplete(order._id)}
+                    onClick={() => markCompleted(order._id)}
                     className="bg-green-600 text-white px-3 py-1 rounded mr-2 hover:bg-green-700"
                   >
                     Complete
@@ -243,6 +232,7 @@ function App() {
                     Delete
                   </button>
                 </td>
+
               </tr>
             ))}
           </tbody>
