@@ -1,3 +1,5 @@
+console.log("🚀 RENDER VERSION ACTIVE");
+
 require("dotenv").config();
 
 const express = require("express");
@@ -23,7 +25,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 /* -------------------- EMAIL SETUP -------------------- */
 
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({  
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
