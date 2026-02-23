@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { 
   LayoutDashboard, ClipboardList, Users, FileText, 
-  Plus, Package, X, Loader2, Search 
+  Plus, Package, X, Loader2, IndianRupee, LogOut 
 } from "lucide-react";
 
+// UPDATE THIS TO YOUR ACTUAL BACKEND URL
 const API_URL = "https://factory-erp-backend.onrender.com";
 
 function App() {
-  const [view, setView] = useState("dashboard"); // Controls which screen is shown
+  const [view, setView] = useState("dashboard"); 
   const [orders, setOrders] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     customerName: "", mobile: "", city: "", orderType: "Direct Sales", 
-    acres: "", units: "", productType: "", amount: ""
+    productType: "Chain Link", amount: ""
   });
 
   const fetchOrders = async () => {
@@ -21,14 +22,14 @@ function App() {
       const res = await fetch(`${API_URL}/orders`);
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
-    } catch (err) { console.error("Fetch error:", err); }
+    } catch (err) { console.error("Fetch Error:", err); }
   };
 
   useEffect(() => { fetchOrders(); }, []);
 
-  const handleCreateOrder = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setLoading(true);
     try {
       const res = await fetch(`${API_URL}/orders`, {
         method: "POST",
@@ -37,64 +38,79 @@ function App() {
       });
       if (res.ok) {
         setShowModal(false);
-        fetchOrders(); // Refresh list
-        alert("Order Saved Successfully!");
+        fetchOrders();
+        alert("Order Recorded!");
       }
-    } catch (err) {
-      alert("Network error. Please check backend.");
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) { alert("Server connection failed"); }
+    finally { setLoading(false); } // STOPS LOADING SPINNER
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
+      {/* SIDEBAR */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-10">
-          <Package className="text-blue-400" />
-          <h1 className="text-xl font-bold">Factory ERP</h1>
+        <div className="flex items-center gap-3 mb-10 text-blue-400">
+          <Package size={28} />
+          <h1 className="text-xl font-black tracking-tighter text-white">FACTORY ERP</h1>
         </div>
-        <nav className="space-y-4 flex-1">
-          <NavItem active={view === "dashboard"} onClick={() => setView("dashboard")} icon={<LayoutDashboard size={20}/>} label="Dashboard" />
-          <NavItem active={view === "orders"} onClick={() => setView("orders")} icon={<ClipboardList size={20}/>} label="Orders" />
-          <NavItem active={view === "customers"} onClick={() => setView("customers")} icon={<Users size={20}/>} label="Customers" />
-          <NavItem active={view === "reports"} onClick={() => setView("reports")} icon={<FileText size={20}/>} label="Reports" />
+        <nav className="space-y-2 flex-1">
+          <SidebarLink active={view === 'dashboard'} icon={<LayoutDashboard size={20}/>} label="Dashboard" onClick={() => setView('dashboard')} />
+          <SidebarLink active={view === 'orders'} icon={<ClipboardList size={20}/>} label="Orders" onClick={() => setView('orders')} />
+          <SidebarLink active={view === 'customers'} icon={<Users size={20}/>} label="Customers" onClick={() => setView('customers')} />
+          <SidebarLink active={view === 'reports'} icon={<FileText size={20}/>} label="Reports" onClick={() => setView('reports')} />
         </nav>
+        <button className="flex items-center gap-3 text-slate-500 hover:text-white p-3 mt-auto"><LogOut size={20}/> Logout</button>
       </aside>
 
-      {/* Content Area */}
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold capitalize">{view} View</h2>
-          <button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition shadow-lg shadow-blue-200">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 overflow-y-auto p-10">
+        <header className="flex justify-between items-center mb-10">
+          <h2 className="text-3xl font-black capitalize">{view}</h2>
+          <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-200">
             <Plus size={20}/> New Order
           </button>
-        </div>
+        </header>
 
-        {/* Dynamic View Logic */}
-        {view === "dashboard" && <DashboardGrid orders={orders} />}
-        {view === "orders" && <OrderTable orders={orders} />}
-        {view === "customers" && <CustomerList orders={orders} />}
-        {view === "reports" && <div className="p-20 text-center text-slate-400 border-2 border-dashed rounded-xl">Reports coming soon...</div>}
+        {view === "dashboard" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              <StatBox label="Total Orders" value={orders.length} color="text-blue-600" />
+              <StatBox label="Revenue" value={`₹${orders.reduce((s, o) => s + (Number(o.amount) || 0), 0).toLocaleString('en-IN')}`} color="text-green-600" />
+              <StatBox label="Active Clients" value={[...new Set(orders.map(o => o.customerName))].length} color="text-purple-600" />
+            </div>
+            <OrderTable orders={orders.slice(0, 5)} title="Recent Activity" />
+          </>
+        )}
+
+        {view === "orders" && <OrderTable orders={orders} title="Manufacturing History" />}
+
+        {view === "customers" && (
+          <div className="grid grid-cols-3 gap-4">
+            {[...new Set(orders.map(o => o.customerName))].map((name, i) => (
+              <div key={i} className="bg-white p-6 rounded-2xl border shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-xl">{name[0]}</div>
+                <p className="font-bold text-lg">{name}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* Modal with fixed loading state */}
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-8 shadow-2xl">
-            <div className="flex justify-between mb-6">
-              <h3 className="text-xl font-bold">New Manufacturing Order</h3>
-              <X className="cursor-pointer text-slate-400 hover:text-slate-600" onClick={() => setShowModal(false)} />
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold">New Order Entry</h3>
+              <X className="cursor-pointer text-slate-400" onClick={() => setShowModal(false)} />
             </div>
-            <form onSubmit={handleCreateOrder} className="grid grid-cols-2 gap-4">
-              <input className="border p-2 rounded" placeholder="Customer Name" onChange={e => setFormData({...formData, customerName: e.target.value})} required />
-              <input className="border p-2 rounded" placeholder="Mobile" onChange={e => setFormData({...formData, mobile: e.target.value})} />
-              <input className="border p-2 rounded" placeholder="City" onChange={e => setFormData({...formData, city: e.target.value})} />
-              <input className="border p-2 rounded" placeholder="Product Type" onChange={e => setFormData({...formData, productType: e.target.value})} />
-              <input className="border p-2 rounded" placeholder="Total Amount" type="number" onChange={e => setFormData({...formData, amount: e.target.value})} required />
-              <button disabled={submitting} className="col-span-2 bg-blue-600 text-white py-3 rounded-lg font-bold flex justify-center hover:bg-blue-700">
-                {submitting ? <Loader2 className="animate-spin" /> : "Confirm Order"}
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+              <input className="border p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none" placeholder="Customer Name" onChange={e => setFormData({...formData, customerName: e.target.value})} required />
+              <input className="border p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none" placeholder="Mobile" onChange={e => setFormData({...formData, mobile: e.target.value})} />
+              <input className="border p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none" placeholder="Product Type" onChange={e => setFormData({...formData, productType: e.target.value})} />
+              <input className="border p-3 rounded-xl focus:ring-2 ring-blue-500 outline-none" placeholder="Amount (₹)" type="number" onChange={e => setFormData({...formData, amount: e.target.value})} required />
+              <button disabled={loading} className="col-span-2 bg-blue-600 text-white py-4 rounded-2xl font-bold flex justify-center hover:bg-blue-700 transition">
+                {loading ? <Loader2 className="animate-spin" /> : "Confirm Manufacturing Order"}
               </button>
             </form>
           </div>
@@ -104,58 +120,36 @@ function App() {
   );
 }
 
-// Support Components
-const NavItem = ({ icon, label, active, onClick }) => (
-  <div onClick={onClick} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-    {icon} <span>{label}</span>
+const SidebarLink = ({ icon, label, active, onClick }) => (
+  <button onClick={onClick} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-900' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+    {icon} <span className="font-semibold">{label}</span>
+  </button>
+);
+
+const StatBox = ({ label, value, color }) => (
+  <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">{label}</p>
+    <p className={`text-4xl font-black ${color}`}>{value}</p>
   </div>
 );
 
-const DashboardGrid = ({ orders }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div className="bg-white p-6 rounded-2xl border shadow-sm">
-      <p className="text-slate-400 text-sm font-bold uppercase mb-1">Total Orders</p>
-      <p className="text-3xl font-black">{orders.length}</p>
-    </div>
-    <div className="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-green-500">
-      <p className="text-slate-400 text-sm font-bold uppercase mb-1">Total Revenue</p>
-      <p className="text-3xl font-black">₹{orders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0).toLocaleString()}</p>
-    </div>
-    <div className="bg-white p-6 rounded-2xl border shadow-sm">
-      <p className="text-slate-400 text-sm font-bold uppercase mb-1">Active Clients</p>
-      <p className="text-3xl font-black">{[...new Set(orders.map(o => o.customerName))].length}</p>
-    </div>
-  </div>
-);
-
-const OrderTable = ({ orders }) => (
-  <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
+const OrderTable = ({ orders, title }) => (
+  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="p-6 border-b font-bold text-lg bg-slate-50/50">{title}</div>
     <table className="w-full text-left">
-      <thead className="bg-slate-50 border-b text-xs uppercase text-slate-500 font-bold">
-        <tr><th className="p-4">Customer</th><th className="p-4">Product</th><th className="p-4">Status</th><th className="p-4 text-right">Amount</th></tr>
+      <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold tracking-wider">
+        <tr><th className="p-6">Customer</th><th className="p-6">Product</th><th className="p-6 text-right">Amount</th></tr>
       </thead>
-      <tbody>
+      <tbody className="divide-y divide-slate-50">
         {orders.map((o, i) => (
-          <tr key={i} className="border-b hover:bg-slate-50">
-            <td className="p-4 font-bold">{o.customerName}</td>
-            <td className="p-4">{o.productType}</td>
-            <td className="p-4"><span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase">{o.status}</span></td>
-            <td className="p-4 text-right font-bold">₹{Number(o.amount || 0).toLocaleString()}</td>
+          <tr key={i} className="hover:bg-slate-50/80 transition">
+            <td className="p-6 font-bold">{o.customerName}</td>
+            <td className="p-6 text-slate-500 font-medium">{o.productType}</td>
+            <td className="p-6 text-right font-black text-slate-900">₹{(Number(o.amount) || 0).toLocaleString('en-IN')}</td>
           </tr>
         ))}
       </tbody>
     </table>
-  </div>
-);
-
-const CustomerList = ({ orders }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {[...new Set(orders.map(o => o.customerName))].map((name, i) => (
-      <div key={i} className="bg-white p-4 rounded-xl border flex items-center gap-4">
-        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">{name[0]}</div>
-        <p className="font-bold">{name}</p>
-      </div>
-    ))}
   </div>
 );
 

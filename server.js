@@ -8,76 +8,66 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// MongoDB Connection
+// Database Connection using Render Environment Variable
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected ✅"))
   .catch((err) => console.log("DB Connection Error ❌:", err));
 
-// Order Schema
+// Complete Schema to match your form fields
 const orderSchema = new mongoose.Schema({
-  customerName: String, 
-  mobile: String, 
-  city: String,
-  orderType: String,
-  acres: String,
-  units: String,
-  productType: String,
-  amount: Number,
+  customerName: String, mobile: String, city: String, pincode: String,
+  orderType: String, acres: String, units: String, soilType: String,
+  productType: String, material: String, dimension: String,
+  deliveryDate: String, amount: { type: Number, default: 0 },
   status: { type: String, default: "Order placed" }
 }, { timestamps: true });
 
 const Order = mongoose.model("Order", orderSchema);
 
-// Email Transporter Config
+// Email Config using Render Environment Variables
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Your gmail
-    pass: process.env.EMAIL_PASS  // Your 16-digit App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS 
   }
 });
 
-// GET Orders
+// GET all orders
 app.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST New Order (Optimized to prevent hanging)
+// POST new order - NON-BLOCKING EMAIL
 app.post("/orders", async (req, res) => {
   try {
-    // 1. Save to Database First
     const newOrder = new Order(req.body);
     const savedOrder = await newOrder.save();
 
-    // 2. Respond to Frontend IMMEDIATELY (Spinner will stop)
+    // 1. Respond to Frontend IMMEDIATELY to stop the loading spinner
     res.status(201).json(savedOrder);
 
-    // 3. Attempt Email in the background (Non-blocking)
+    // 2. Send Email in the background
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: "support@srinsights.com", // <--- THE TARGET EMAIL
-      subject: `New Order: ${savedOrder.customerName}`,
-      text: `A new order worth ₹${savedOrder.amount} has been placed by ${savedOrder.customerName}.`
+      to: "support@srinsights.com",
+      subject: `New Factory Order: ${savedOrder.customerName}`,
+      text: `Order Details:\nCustomer: ${savedOrder.customerName}\nProduct: ${savedOrder.productType}\nAmount: ₹${savedOrder.amount}`
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log("⚠️ Background Email Failed:", error.message);
-      } else {
-        console.log("📧 Background Email Sent Successfully");
-      }
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) console.log("📧 Email Background Error:", err.message);
+      else console.log("📧 Alert Sent Successfully");
     });
 
-  } catch (error) {
-    console.error("❌ Order Save Error:", error.message);
+  } catch (err) {
+    console.error("❌ Save Error:", err.message);
     res.status(500).json({ error: "Failed to save order" });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server active on port ${PORT}`));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
