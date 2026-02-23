@@ -8,12 +8,13 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// Database Connection using Render Environment Variable
+// 1. DATABASE CONNECTION
+// Uses the variable you set in Render Dashboard
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected ✅"))
   .catch((err) => console.log("DB Connection Error ❌:", err));
 
-// Complete Schema to match your form fields
+// 2. DATA SCHEMA
 const orderSchema = new mongoose.Schema({
   customerName: String, mobile: String, city: String, pincode: String,
   orderType: String, acres: String, units: String, soilType: String,
@@ -24,7 +25,7 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model("Order", orderSchema);
 
-// Email Config using Render Environment Variables
+// 3. EMAIL CONFIG
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -33,7 +34,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// GET all orders
+// 4. ROUTES
 app.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
@@ -41,16 +42,15 @@ app.get("/orders", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST new order - NON-BLOCKING EMAIL
 app.post("/orders", async (req, res) => {
   try {
     const newOrder = new Order(req.body);
     const savedOrder = await newOrder.save();
 
-    // 1. Respond to Frontend IMMEDIATELY to stop the loading spinner
+    // SUCCESS RESPONSE: Send this immediately so the UI spinner stops
     res.status(201).json(savedOrder);
 
-    // 2. Send Email in the background
+    // BACKGROUND TASK: Send the email alert
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: "support@srinsights.com",
@@ -60,7 +60,7 @@ app.post("/orders", async (req, res) => {
 
     transporter.sendMail(mailOptions, (err) => {
       if (err) console.log("📧 Email Background Error:", err.message);
-      else console.log("📧 Alert Sent Successfully");
+      else console.log("📧 Alert Sent to support@srinsights.com ✅");
     });
 
   } catch (err) {
@@ -70,4 +70,4 @@ app.post("/orders", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server active on port ${PORT}`));
