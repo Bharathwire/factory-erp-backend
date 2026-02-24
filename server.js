@@ -8,36 +8,31 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+// DATABASE CONNECTION
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected ✅"))
-  .catch((err) => console.log("DB Error:", err));
+  .catch((err) => console.log("DB Connection Error ❌:", err));
 
-// UPDATED SCHEMA: Includes all fields from your screenshot
+// 1. ORDER SCHEMA
 const orderSchema = new mongoose.Schema({
-  customerName: String,
-  mobile: String,
-  address: String,
-  pincode: String,
-  state: String,
-  city: String,
-  orderType: String,
-  acres: String,
-  units: String,
-  soilType: String,
-  productType: String,
-  material: String,
-  dimension: String,
-  deliveryDate: String,
+  customerName: String, mobile: String, city: String, productType: String,
   amount: { type: Number, default: 0 },
-  status: { type: String, default: "Order placed" }
+  status: { type: String, default: "Pending" }
 }, { timestamps: true });
 
 const Order = mongoose.model("Order", orderSchema);
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+// 2. STOCK SCHEMA
+const stockSchema = new mongoose.Schema({
+  itemName: String,
+  quantity: Number,
+  unit: String,
+  lastUpdated: { type: Date, default: Date.now }
 });
+
+const Stock = mongoose.model("Stock", stockSchema);
+
+// --- ROUTES FOR ORDERS ---
 
 app.get("/orders", async (req, res) => {
   const orders = await Order.find().sort({ createdAt: -1 });
@@ -46,26 +41,40 @@ app.get("/orders", async (req, res) => {
 
 app.post("/orders", async (req, res) => {
   try {
-    const savedOrder = await new Order(req.body).save();
+    const newOrder = new Order(req.body);
+    const savedOrder = await newOrder.save();
     res.status(201).json(savedOrder);
-
-    // Background Email
-    transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: "support@srinsights.com",
-      subject: `New Factory Order: ${savedOrder.customerName}`,
-      text: `New order for ${savedOrder.productType} worth ₹${savedOrder.amount} received.`
-    }).catch(e => console.log("Mail error ignored."));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// NEW DELETE ROUTE
-app.delete("/orders/:id", async (req, res) => {
+app.patch("/orders/:id", async (req, res) => {
   try {
-    await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: "Order Deleted" });
+    const updated = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+    res.json(updated);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete("/orders/:id", async (req, res) => {
+  await Order.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
+});
+
+// --- ROUTES FOR STOCK ---
+
+app.get("/stock", async (req, res) => {
+  const inventory = await Stock.find().sort({ itemName: 1 });
+  res.json(inventory);
+});
+
+app.post("/stock", async (req, res) => {
+  const { itemName, quantity, unit } = req.body;
+  const item = await Stock.findOneAndUpdate(
+    { itemName },
+    { $set: { quantity, unit, lastUpdated: Date.now() } },
+    { upsert: true, new: true }
+  );
+  res.json(item);
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server on ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Factory Server running on ${PORT}`));
